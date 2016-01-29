@@ -358,7 +358,7 @@ class send_key_thread(threading.Thread):
         self.__key = key
 
     def devexist(self):
-        p = subprocess.Popen("adb devices", shell=True, stdout=subprocess.PIPE)
+        p = subprocess.Popen("adb devices", shell=True, stdout=subprocess.PIPE,stdin=subprocess.PIPE,stderr=subprocess.PIPE)
         p.wait()
         devList = p.communicate()
         devList = devList[0].splitlines()
@@ -370,7 +370,9 @@ class send_key_thread(threading.Thread):
             if DEBUG:
                 print 'No adb device found'
             return False
-
+        p.stdout.close()
+        p.stderr.close()
+        
     def sendKey(self):
         if DEBUG:
             print 'send_key: %s' % self.__key
@@ -522,6 +524,7 @@ class LcdApplication(tk.Frame):
         if DEBUG:
             print 'LcdApplication: stop'
         self.__keepupdate = False
+        self.__im.__del__()
 
     # screen capture via socket from adb server
     def updatelcd_sock(self):
@@ -540,7 +543,7 @@ class LcdApplication(tk.Frame):
         refresh_count = 0 # record refresh count
 
         while self.__keepupdate:
-            print "begin time"
+            #print "begin time"
             start_cpu = time.clock()
             # Get device SerialNumber from ADB server
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -570,6 +573,7 @@ class LcdApplication(tk.Frame):
             s.close()
 
             if dev_sn == '':
+                print "no device"
                 continue
 
             # Get framebuffer from ADB server
@@ -713,11 +717,12 @@ class LcdApplication(tk.Frame):
 
                             draw = ImageDraw.Draw(image)
                             draw.text((5, 30), 'read fb time:%f S'%(end3_cpu - end1_cpu),fill = "#ff0000")
+                            del draw
                             new_image = ImageTk.PhotoImage(image)
 
                             self.__im = new_image
                             self.__lcd['image'] = self.__im
-
+                            del image
                             end_cpu = time.clock()
                             print "end time :%f " % (end_cpu - start_cpu)
                         except:
