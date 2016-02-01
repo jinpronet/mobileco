@@ -15,7 +15,7 @@ import subprocess,os
 import threading
 import socket,sys
 import time
-import Slogy
+from Slogy import *
 
 try:
     import Tkinter as tk

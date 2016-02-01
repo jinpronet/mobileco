@@ -33,6 +33,7 @@ class AdbUnit:
 
     def __init__(self):
         self.connect_adb_server()
+        self.slog = Slogy.Slogy("adbunit")
         pass
 
     #connect the adb server
@@ -134,6 +135,12 @@ class AdbUnit:
                 cnt = cnt + 1
             print pstr
 
+    def sendKey(self,key):
+        if self.device_exist() :
+            self.adbshellcommand('input keyevent %s' % key)
+        else:
+            self.slog.loge("device not online for key:[%s] input" % key)
+
     # Read adb response, if 'OKAY' turn true
     def readAdbResponse(self,s):
             if s != None:
@@ -175,6 +182,6 @@ if __name__ == '__main__':
         cout += 1
         print 'begin'
         adb.device_exist()
-        log.logd( 'start sleep count:'+ str(cout))
+        log.logi( 'start sleep count:'+ str(cout))
         time.sleep(1)
 

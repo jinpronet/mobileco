@@ -13,7 +13,7 @@ class Slogy():
     name_fd = None
     lg = None
 
-    def __init__(self,Name="",debug=logging.DEBUG):
+    def __init__(self,Name="",debug=logging.INFO):
 
         curDate = date.today() - timedelta(days=0)
         if Name == "" :
@@ -31,12 +31,22 @@ class Slogy():
 
         logger = logging.getLogger('tst')    # 获取名为tst的logger
         logger.addHandler(handler)           # 为logger添加handler
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(debug)
+
+        handler = logging.StreamHandler()
+        logger.addHandler(handler)
         self.lg = logger
 
     def logd(self,str):
         self.lg.debug(str)
         pass
+    def loge(self,str):
+        self.lg.error(str)
+        pass
+    def logi(self,str):
+        self.lg.info(str)
+        pass
+
     def outp(self,str):
         pass
 
