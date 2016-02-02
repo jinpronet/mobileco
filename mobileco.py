@@ -15,8 +15,8 @@ import subprocess,os
 import threading
 import socket,sys
 import time
-from Slogy import *
-
+import Slogy
+from AdbUnit  import *
 try:
     import Tkinter as tk
     import ttk
@@ -34,6 +34,7 @@ DEBUG = False
 # Set USE_TTK to False if you need classic Tk/Tcl GUI-style
 USE_TTK = True
 
+glog = None
 
 # keynames is the key name list
 # 'none': no keys in this grid
@@ -392,6 +393,72 @@ class send_key_thread(threading.Thread):
             print 'stop send_key_thread'
         self.thread_stop = True
 
+class ttkTestApplication(ttk.Frame):
+    _adb = AdbUnit()
+    _entry = None
+    _text = None
+    def __init__(self, master=None):
+        ttk.Frame.__init__(self, master, class_='ttktestApplication')
+        title = 'mobileco '+ __version__+ '-Test'
+        self.master.title(title)
+        self.create_test()
+        master.geometry("+%d+%d" % (300, 200))
+        self.grid()
+
+    def create_test(self):
+
+        #add test button
+        cl = 0
+        for bn in ['enginner','gps','validation']:
+            g_button = ttk.Button(self,name = bn,text = bn)
+            g_button.bind('<ButtonRelease-1>', self._test_func)
+            g_button.grid(row = 0,column = cl)
+            cl +=1
+        #add command line
+        t = ttk.Label(self,text = "命令：")
+        t.grid(row = 1,column = 0)
+        self._entry = ttk.Entry(self,width = 25)
+        self._entry.grid(row = 1,column = 1,columnspan=2)
+
+
+        self._text = tk.Text(self,width = 30,height = 20)
+        self._text.grid(row = 2,column =0,columnspan =3)
+        self._entry.bind("<Return>",self.get_cmd)
+
+        pass
+    def get_cmd(self,event):
+        str = event.widget.get()
+        self.show_respon("youjin# "+str + '\n')
+
+        self._entry.delete('0','end')
+        self._entry.update()
+
+    def show_respon(self,str):
+        self._text.insert('end',str)
+        pass
+    
+    def _test_func(self,event):
+        bn =  event.widget.winfo_name()
+        print bn
+
+        cmd = "none"
+        if bn == "enginner":
+            cmd = "am start -n  com.zte.emode/.UsbSwitchTest"
+            pass
+        elif bn == "gps":
+            cmd = "am start -n com.zte.emode/.NetWorkSettings"
+            pass
+        elif bn == "validation":
+            cmd = "am start -n com.zte.emode/.VoltameterInfo"
+            pass
+        print cmd
+        if self._adb.device_exist():
+            print cmd
+            print self._adb.adbshellcommand(cmd)
+
+        pass
+
+
 # Kaypad Tkinter-Based GUI application
 class ttkKeypadApplication(ttk.Frame):
     def __init__(self, master=None):
@@ -451,10 +518,11 @@ class LcdApplication(tk.Frame):
     __start = [0, 0]
     __end = [0, 0]
     __master= None
-    def __init__(self, master):
+    lg= None
+    def __init__(self, master,glog):
         if DEBUG:
             print 'LcdApplication: __init__'
-
+        self.lg = glog
         tk.Frame.__init__(self, master, class_='LcdApplication')
         self.__master = master
         self.__rotate = 0
@@ -767,6 +835,10 @@ def show_keypad():
     b_rootTop = tk.Toplevel()
     tkapp = ttkKeypadApplication(master=b_rootTop)
 
+def show_test():
+    b_rootTop = tk.Toplevel()
+    tkapp = ttkTestApplication(master=b_rootTop)
+
 def show_about():
     print "help"
     showinfo(title='帮助',message="联系人:youjin\n联系方式:https://github.com/jinpronet/mobileco")
@@ -786,6 +858,7 @@ def add_menu(root):
     '''
     menu_key = tk.Menu(root)
     menu_key.add_command(label="键盘",command = show_keypad )
+    menu_key.add_command(label="测试",command = show_test )
     menu_key.add_command(label="帮助",command = show_about )
     root.config(menu=menu_key)
 
@@ -804,10 +877,17 @@ def add_button(root):
     b_frame.grid()
 
 
-def mobileco_main():
+def mobileco_main( debug):
+    global glog
+
+    if debug:
+        glog = Slogy.Slogy("mobileco",debug = True)
+    else:
+        glog = Slogy.Slogy("mobileco")
+
     b_root = tk.Tk()
 
-    tklcd = LcdApplication(master=b_root)
+    tklcd = LcdApplication(master=b_root,glog=glog)
     add_menu(b_root)
     add_button(b_root)
 
@@ -836,12 +916,15 @@ def usage():
 
 if __name__ == '__main__':
     prog_name = sys.argv[0]
+
     if '--debug' in  sys.argv:
         DEBUG = True
+
+
 
     if ('-h' in sys.argv) or ('--help' in sys.argv):
         usage()
         exit()
     #main function
-    mobileco_main()
+    mobileco_main(DEBUG)
 

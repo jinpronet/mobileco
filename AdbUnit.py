@@ -53,10 +53,11 @@ class AdbUnit:
         #
     def device_exist(self):
         req_msg = 'host:devices'
-        s = self.__socketD
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect(('127.0.0.1', 5037))
-        except:
+        except Exception,e:
+            print e
             os.system('adb start-server')
             self.device_islive = False
             self.device_sn = ''
@@ -73,15 +74,17 @@ class AdbUnit:
                 dev_info = s.recv(length)
                 if '\t' in dev_info:
                     dev_sn = dev_info[0:dev_info.index('\t')]
+                    self.device_islive = True
                 else:
+                    self.device_islive = False
                     dev_sn = ''
 
                 if self.DEBUG:
                     print 'dev serial: %s' % dev_sn
 
-                self.device_islive = False
+
                 self.dev_sn = dev_sn
-                print s.recv(1024) # receive all rest data
+                print "exist device: "+s.recv(1024) # receive all rest data
 
                 break
         s.close()
@@ -182,6 +185,6 @@ if __name__ == '__main__':
         cout += 1
         print 'begin'
         adb.device_exist()
-        log.logi( 'start sleep count:'+ str(cout))
-        time.sleep(1)
+        log.logi( 'start sleep 1234 count:'+ str(cout))
+        #time.sleep(1)
 
