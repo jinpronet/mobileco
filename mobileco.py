@@ -16,6 +16,8 @@ import threading
 import socket,sys
 import time
 import Slogy
+from ScrolledText import ScrolledText
+
 from AdbUnit  import *
 try:
     import Tkinter as tk
@@ -419,24 +421,32 @@ class ttkTestApplication(ttk.Frame):
         t.grid(row = 1,column = 0)
         self._entry = ttk.Entry(self,width = 25)
         self._entry.grid(row = 1,column = 1,columnspan=2)
-
-
-        self._text = tk.Text(self,width = 30,height = 20)
-        self._text.grid(row = 2,column =0,columnspan =3)
         self._entry.bind("<Return>",self.get_cmd)
+
+        self._text = ScrolledText(self,width = 30,height = 20)
+        self._text.grid(row = 2,column =0,columnspan =3)
+        self.master.bind('<Configure>',self.resize)
+
+
 
         pass
     def get_cmd(self,event):
         str = event.widget.get()
         self.show_respon("youjin# "+str + '\n')
-
         self._entry.delete('0','end')
         self._entry.update()
+        rep = self._adb.adbshellcommand(str)
+        if rep == None:
+            rep = "more than one device and emulator"
+        self.show_respon("adb#"+ rep )
+        self._text.configure(width = 50,height = 30)
 
     def show_respon(self,str):
         self._text.insert('end',str)
+
+        self._text.yview_moveto(1)
         pass
-    
+
     def _test_func(self,event):
         bn =  event.widget.winfo_name()
         print bn
@@ -454,7 +464,12 @@ class ttkTestApplication(ttk.Frame):
         print cmd
         if self._adb.device_exist():
             print cmd
-            print self._adb.adbshellcommand(cmd)
+            self.show_respon(cmd)
+            rep =  self._adb.adbshellcommand(cmd)
+            self.show_respon(rep)
+        pass
+    def resize(self,event):
+        print event.width,' ',event.height
 
         pass
 
@@ -610,17 +625,18 @@ class LcdApplication(tk.Frame):
         hdrsize = 0
         myfb = fb()
         refresh_count = 0 # record refresh count
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         while self.__keepupdate:
             #print "begin time"
             start_cpu = time.clock()
             # Get device SerialNumber from ADB server
-
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 s.connect(('127.0.0.1', 5037))
             except:
                 os.system('adb start-server')
                 time.sleep(2)
+                s.close()
                 continue
 
             req_msg = 'host:devices'
@@ -706,14 +722,14 @@ class LcdApplication(tk.Frame):
                         print 'alpha_length: %d' % myfb.alpha_length
 
                     end1_cpu = time.clock()
-                    print "end1 time :%f " % (end1_cpu - start_cpu)
+                    #print "end1 time :%f " % (end1_cpu - start_cpu)
                     # read fb buffer
                     rcvcnt = 0
                     readbyte = 0
                     imagebuff = []
                     end2_cpu = time.clock()
-                    print "begin read fb time :%f " % (end2_cpu - end1_cpu)
-                    print "fb_size :%d " % myfb.fb_size
+                    #print "begin read fb time :%f " % (end2_cpu - end1_cpu)
+                    #print "fb_size :%d " % myfb.fb_size
 
                     while True:
                         if (rcvcnt < myfb.fb_size):
@@ -728,7 +744,7 @@ class LcdApplication(tk.Frame):
                         if len(resp) == 0:
                             break
 
-                    if True:
+                    if DEBUG:
                         print 'total rcv byte: %d' % rcvcnt
                     reply = s.recv(10)
                     s.close()
@@ -771,7 +787,7 @@ class LcdApplication(tk.Frame):
                     if (factor < 1.00):
                         image = image.resize((img_w, img_h))
                     end3_cpu = time.clock()
-                    print "read buf time :%f " %(end3_cpu - end2_cpu)
+                   # print "read buf time :%f " %(end3_cpu - end2_cpu)
                     # rotate image
                     if self.__rotate != 0:
                         image = image.rotate(self.__rotate)
@@ -793,7 +809,7 @@ class LcdApplication(tk.Frame):
                             self.__lcd['image'] = self.__im
                             del image
                             end_cpu = time.clock()
-                            print "end time :%f " % (end_cpu - start_cpu)
+                            #print "end time :%f " % (end_cpu - start_cpu)
                         except:
                             continue
 

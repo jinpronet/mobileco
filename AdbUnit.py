@@ -26,7 +26,7 @@ class AdbUnit:
 
     __socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     __socketD = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    DEBUG = True
+    DEBUG = False
     device_isalive = False
     device_sn = ''
     slog = None
@@ -93,7 +93,7 @@ class AdbUnit:
 
     # Send adb shell command
     def adbshellcommand(self,cmd):
-        reply = None
+        reply = ""
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # waiting adb server start
@@ -118,8 +118,17 @@ class AdbUnit:
             print '%s' % req_msg
         s.sendall('%04x' % len(req_msg))
         s.sendall(req_msg)
+
         if self.readAdbResponse(s):
-            reply = s.recv(4096)
+            while True:
+                rp = s.recv(4096)
+                print "reply:",len(rp)
+                if len(rp)== 0:
+                    break
+                reply = reply + rp
+
+            print "reply2:",len(reply)
+
             if self.DEBUG:
                 self.hexdump(bytearray(reply))
         s.close()
@@ -149,7 +158,7 @@ class AdbUnit:
             if s != None:
                 resp = s.recv(4)
                 if self.DEBUG:
-                    print 'resp: %s' % repr(resp)
+                    print 'resp: %s ' % repr(resp)
 
             if len(resp) != 4:
                 print 'protocol fault (no status)'
