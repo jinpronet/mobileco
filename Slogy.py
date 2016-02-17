@@ -4,8 +4,13 @@ import os
 import time
 from datetime import *
 import logging
+class a:
+    def __init__(self):
+        print "a"
+    pass
 
-class Slogy():
+
+class Slogy:
     '''
     save log
     '''
@@ -17,11 +22,17 @@ class Slogy():
 
         curDate = date.today() - timedelta(days=0)
         if Name == "" :
-            Name = "err_"+str(curDate)+".log"
+            Name = "_"+str(curDate)+".log"
         else:
-            Name = Name+"_err_"+str(curDate)+".log"
+            Name = Name+"_"+str(curDate)+".log"
 
-        LOG_FILE = Name
+        LOG_FILE = "log/"+Name
+
+        if not os.path.exists("log"):
+            os.mkdir("log")
+        if not os.path.exists("image"):
+            os.mkdir("image")
+
         #logging class 使用
         handler = logging.FileHandler(LOG_FILE) # 实例化handler
         fmt = '%(asctime)s - %(message)s'
