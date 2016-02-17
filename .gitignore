@@ -1,0 +1,10 @@
+*.pyc
+*.log
+/log/*
+/image/
+/.idea
+/build/
+/dist/
+/mobileco.spec
+
+

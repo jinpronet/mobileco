@@ -271,7 +271,7 @@ class LcdApplication(tk.Frame):
     my = 0
     mx1 = 0
     my1 = 0
-
+    swip = False
     log = None
     adb = None
     def __init__(self, master,glog):
@@ -334,15 +334,17 @@ class LcdApplication(tk.Frame):
           abs(self.__start[1] - self.__end[1]) < 2 :
             # mouse action: tap
             self.adb.send_touch_event('tap', self.__start[0], self.__start[1])
-            self.mx = self.__start[0]
-            self.my = self.__start[1]
+            self.mx = int(self.__start[0]*float(self.__img_factor))
+            self.my = int(self.__start[1]*float(self.__img_factor))
+            self.swip = False
         else:
             # mouse action: swipe
             self.adb.send_touch_event('swipe', self.__start[0], self.__start[1], self.__end[0], self.__end[1])
-            self.mx = self.__start[0]
-            self.my = self.__start[1]
-            self.mx1 = self.__end[0]
-            self.my1 = self.__end[1]
+            self.mx = int(self.__start[0]*float(self.__img_factor))
+            self.my = int(self.__start[1]*float(self.__img_factor))
+            self.mx1 = int(self.__end[0]*float(self.__img_factor))
+            self.my1 = int(self.__end[1]*float(self.__img_factor))
+            self.swip = True
 
 
 
@@ -356,10 +358,10 @@ class LcdApplication(tk.Frame):
         self.log.logd( 'LcdApplication: updatelcd_sock')
         # Max display area size on label widget
         # We Must set if the area size less than screen of mobile
-        #max_lcd_w = 1024
-        #max_lcd_h = 600
-        max_lcd_w = 1440
-        max_lcd_h = 720
+        max_lcd_w = 1024
+        max_lcd_h = 600
+        #max_lcd_w = 1440
+        #max_lcd_h = 720
 
 
         dev_sn = ''
@@ -515,7 +517,7 @@ class LcdApplication(tk.Frame):
                     img_w = int(lcd_w * factor)
                     img_h = int(lcd_h * factor)
                     self.log.logd('Image size: %d x %d' % (img_w, img_h))
-
+                    print 'Image size: %d x %d' % (img_w, img_h)
                     # resize image
                     if (factor < 1.00):
                         image = image.resize((img_w, img_h))
@@ -536,8 +538,12 @@ class LcdApplication(tk.Frame):
                             draw = ImageDraw.Draw(image)
                             draw.text((5, 30), 'read fb time:%f S'%(end3_cpu - end1_cpu),fill = "#ff0000")
                             draw.text((5,40),'usb transfter speed:%f MB/s '%((myfb.fb_size)/(1024*1024)/(end3_cpu - end1_cpu)),fill = "#ff0000")
-                            self.screen = image
-                            del draw
+                            if self.swip:
+                                draw.line((self.mx,self.my,self.mx1,self.my1),fill = 'red',width = 2)
+                            else:
+                                draw.ellipse((self.mx-10,self.my-10, self.mx+10, self.my+10), outline ='red')
+
+
                             new_image = ImageTk.PhotoImage(image)
 
                             self.__im = new_image

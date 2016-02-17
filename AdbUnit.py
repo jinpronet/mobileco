@@ -369,10 +369,11 @@ class AdbUnit:
 
 
 if __name__ == '__main__':
+    import cProfile
     adb = AdbUnit()
     cout = 0
     log = Slogy.Slogy("good")
-    while True:
+    while cout < 10:
         cout += 1
         print 'begin'
         adb.device_exist()
