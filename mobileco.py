@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ---------------------------------------------------------------------------
-# Android Mobileco 0.1
+# Android Mobileco 0.5
 # This is a free software under GPL.
 #
 # Author: youjin
@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 
 __author__ = 'youjin'
-__version__ = '0.3'
+__version__ = '0.5'
 
 import subprocess,os
 import threading
@@ -39,6 +39,11 @@ DEBUG = False
 USE_TTK = True
 
 glog = None
+
+# A global var for control thread exit ok
+gexit = False
+
+gevent = threading.Event()
 
 # keynames is the key name list
 # 'none': no keys in this grid
@@ -97,24 +102,32 @@ class fb:
         alpha_length = 0
         fb_data = None
 
-# Send key thread
+
 class send_key_thread(threading.Thread):
+    """
+    This class for send key to adb mobile
+    """
     __tkapp = None
     __root = None
     __key = None
     adb = None
     log = None
     def __init__(self, key):
-        if DEBUG:
-            print 'send_key_thread init'
+        """
+        This init nend a key for send,detail in keynames list
+        """
+        self.log = Slogy.Slogy("mobileco")
+        self.log.logd("send_key_thread init")
         threading.Thread.__init__(self)
         self.thread_stop = False
         self.__key = key
         self.adb = AdbUnit.AdbUnit()
-        self.log = Slogy.Slogy("mobileco")
+
     def sendKey(self):
-        if DEBUG:
-            print 'send_key: %s' % self.__key
+        """
+        Find a keyname and transfor to sacn code ,then send it by adb
+        """
+        self.log.logd('send_key: %s' % self.__key)
         if self.__key in keynames:
             if self.adb.device_exist():
                 if self.__key != 'none':
@@ -129,19 +142,30 @@ class send_key_thread(threading.Thread):
         self.thread_stop = True
 
 class ttkTestApplication(ttk.Frame):
+    """
+    This class for design a Test Pad
+    """
     _adb = None
     _entry = None
     _text = None
+
     def __init__(self, master=None):
         self._adb = AdbUnit.AdbUnit()
         ttk.Frame.__init__(self, master, class_='ttktestApplication')
+
+        #Set the windows title
         title = 'mobileco '+ __version__+ '-Test'
         self.master.title(title)
         self.create_test()
+
+        #Set the pad position
         master.geometry("+%d+%d" % (300, 200))
         self.grid()
 
     def create_test(self):
+        """
+        Build widgets for pad
+        """
 
         #add test button
         cl = 0
@@ -161,27 +185,36 @@ class ttkTestApplication(ttk.Frame):
         self._text.grid(row = 2,column =0,columnspan =3)
         self.master.bind('<Configure>',self.resize)
 
-
-
         pass
+
     def get_cmd(self,event):
-        str = event.widget.get()
-        self.show_respon("youjin# "+str + '\n')
+        """
+        Get the Entry text for cmd ,And send to mobile
+        """
+
+        str_cmd = event.widget.get()
+        self.show_respon("youjin# "+ str_cmd + '\n')
         self._entry.delete('0','end')
         self._entry.update()
-        rep = self._adb.adbshellcommand(str)
-        if rep == None:
+        rep = self._adb.adbshellcommand(str_cmd)
+
+        if rep is None:
             rep = "more than one device and emulator"
         self.show_respon("adb#"+ rep )
         self._text.configure(width = 50,height = 30)
 
     def show_respon(self,str):
+        """
+        Place the text in a Text widget for show
+        """
         self._text.insert('end',str)
-
         self._text.yview_moveto(1)
         pass
 
     def _test_func(self,event):
+        """
+        implement the Fix button widget function
+        """
         bn =  event.widget.winfo_name()
         print bn
 
@@ -195,21 +228,23 @@ class ttkTestApplication(ttk.Frame):
         elif bn == "validation":
             cmd = "am start -n com.sprd.validationtools/.ValidationToolsMainActivity"
             pass
-        print cmd
+
         if self._adb.device_exist():
-            print cmd
             self.show_respon(cmd)
             rep =  self._adb.adbshellcommand(cmd)
             self.show_respon(rep)
         pass
+
     def resize(self,event):
         print event.width,' ',event.height
 
         pass
 
 
-# Kaypad Tkinter-Based GUI application
 class ttkKeypadApplication(ttk.Frame):
+    """
+    Kaypad Tkinter-Based GUI application
+    """
     def __init__(self, master=None):
         ttk.Frame.__init__(self, master, class_='ttkKeypadApplication')
         title = 'mobileco '+ __version__+ '-Keypad'
@@ -218,7 +253,9 @@ class ttkKeypadApplication(ttk.Frame):
         self.grid()
 
     def createkeypad(self):
-        # creat buttons from keymap with 4 buttons each row
+        """
+        creat buttons from keymap with 4 buttons each row
+        """
         for btn_name in keynames:
             row_id = keynames.index(btn_name) / 4
             col_id = keynames.index(btn_name) % 4
@@ -233,48 +270,45 @@ class ttkKeypadApplication(ttk.Frame):
                 self.tbutton.bind('<ButtonRelease-1>', self.sendKey)
                 self.tbutton.grid(padx = 5, pady = 1, column = col_id, row = row_id)
 
-    def devexist(self):
-        p = subprocess.Popen("adb devices", shell=True, stdout=subprocess.PIPE)
-        p.wait()
-        devList = p.communicate()
-        devList = devList[0].splitlines()
-        if 'device' in devList[1]:
-            if DEBUG:
-                print devList[1]
-            return True
-        else:
-            if DEBUG:
-                print 'No adb device found'
-            return False
 
     def sendKey(self, event=None):
-        if DEBUG:
-            print event.widget.winfo_name()
         keyname = event.widget.winfo_name()
         if keyname in keynames:
             sender = send_key_thread(keyname)
             sender.start()
 
-# LCD Tkinter-Based GUI application
+
 class LcdApplication(tk.Frame):
+    """
+    LCD Tkinter-Based GUI application
+    """
     __img_factor = 1.00 # image resize rate
     __lcd = None # the label widget
-    __keepupdate = True
-    __im = None
-    __rotate = 0
+    __keepupdate = True # control the socket update while
+    __im = None # cache the lable backimage
+    __imsc = None # copy the socket update image for show
+    __rotate = 0 # rotate the image for show
+
     __screen = None
     # record mouse start & end point location
     __start = [0, 0]
     __end = [0, 0]
     __master= None
+
+    #recod the cricle for show mouse click
     mx = 0
     my = 0
     mx1 = 0
     my1 = 0
     swip = False
-    log = None
-    adb = None
+
+    log = None # the log instanse
+    adb = None # the adb Unit
+
     def __init__(self, master,glog):
+        """
+        should have master and glog
+        """
         self.log = glog
         self.adb = AdbUnit.AdbUnit()
 
@@ -304,14 +338,21 @@ class LcdApplication(tk.Frame):
         # disply label on frame
         self.__lcd.grid()
 
-    # To serve right click on label widget
+
     def rightclick_label(self, event=None):
+        """
+        To serve right click on label widget
+        """
         self.log.logd('Type: %s' % event.type)
         self.__rotate = (self.__rotate + 90) % 360
         self.log.logi("rotate: %d" % self.__rotate)
 
-    # To serve left click on label widget
+
     def click_label(self, event=None):
+        """
+        To serve left click on label widget
+        """
+        global gevent
         self.log.logd('Type: %s' % event.type)
         if event.type == '4':
             # record mouse left button down
@@ -346,15 +387,50 @@ class LcdApplication(tk.Frame):
             self.my1 = int(self.__end[1]*float(self.__img_factor))
             self.swip = True
 
+        gevent.set()
+
 
 
     def stop(self):
         self.log.logd('LcdApplication: stop')
         self.__keepupdate = False
-        self.__im.__del__()
 
-    # Screen capture via socket from adb server
+        global gevent
+        gevent.set()
+
+    def update_screen(self):
+        """
+        update screen for event
+        """
+        while self.__keepupdate:
+            global gevent
+            gevent.wait()
+
+            global gexit
+            if gexit:
+                break
+
+            draw = ImageDraw.Draw(self.__imsc)
+            if self.swip:
+                draw.line((self.mx,self.my,self.mx1,self.my1),fill = 'red',width = 2)
+            else:
+                draw.ellipse((self.mx-10,self.my-10, self.mx+10, self.my+10), outline ='red')
+            draw.text((30,30),"hell",fill='red')
+            del draw
+            new_image = ImageTk.PhotoImage(self.__imsc)
+            #print "update_screen"
+
+            self.__lcd['image'] = new_image
+            gevent.clear()
+
+
+        print "update_screen thread exit"
+        pass
+
     def updatelcd_sock(self):
+        """
+        get the image from the socket with adb
+        """
         self.log.logd( 'LcdApplication: updatelcd_sock')
         # Max display area size on label widget
         # We Must set if the area size less than screen of mobile
@@ -370,7 +446,7 @@ class LcdApplication(tk.Frame):
         refresh_count = 0 # record refresh count
 
         while self.__keepupdate:
-            #print "begin time"
+
             start_cpu = time.clock()
             # Get device SerialNumber from ADB server
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -470,14 +546,14 @@ class LcdApplication(tk.Frame):
                     #print "fb_size :%d " % myfb.fb_size
 
                     while True:
-                        if (rcvcnt < myfb.fb_size):
+                        if rcvcnt < myfb.fb_size:
                             readbyte = myfb.fb_size - rcvcnt
                         else:
                             break
                         resp = s.recv(readbyte)
                         if DEBUG:
                             print 'read byte: %d' % len(resp)
-                        rcvcnt = rcvcnt + len(resp);
+                        rcvcnt += len(resp)
                         imagebuff.extend(resp)
                         if len(resp) == 0:
                             break
@@ -517,9 +593,8 @@ class LcdApplication(tk.Frame):
                     img_w = int(lcd_w * factor)
                     img_h = int(lcd_h * factor)
                     self.log.logd('Image size: %d x %d' % (img_w, img_h))
-                    print 'Image size: %d x %d' % (img_w, img_h)
                     # resize image
-                    if (factor < 1.00):
+                    if factor < 1.00:
                         image = image.resize((img_w, img_h))
                     end3_cpu = time.clock()
 
@@ -527,60 +602,58 @@ class LcdApplication(tk.Frame):
                     if self.__rotate != 0:
                         image = image.rotate(self.__rotate)
 
-                    if self.__lcd != None:
+                    if self.__lcd is not None:
                         try:
                             # save image to local path
                             if DEBUG:
-                                refresh_count = refresh_count + 1
+                                refresh_count += 1
                                 image_name = 'image/image_%d.png' % refresh_count
                                 image.save(image_name, format='PNG')
 
                             draw = ImageDraw.Draw(image)
-                            draw.text((5, 30), 'read fb time:%f S'%(end3_cpu - end1_cpu),fill = "#ff0000")
-                            draw.text((5,40),'usb transfter speed:%f MB/s '%((myfb.fb_size)/(1024*1024)/(end3_cpu - end1_cpu)),fill = "#ff0000")
-                            if self.swip:
-                                draw.line((self.mx,self.my,self.mx1,self.my1),fill = 'red',width = 2)
-                            else:
-                                draw.ellipse((self.mx-10,self.my-10, self.mx+10, self.my+10), outline ='red')
+                            draw.text((5, 30), 'Fbps:%f S'%(end3_cpu - end1_cpu),fill = "#ff0000")
+                            draw.text((5,40),'USB Speed:%f MB/s '%(myfb.fb_size /(1024*1024)/(end3_cpu - end1_cpu)),fill = "#ff0000")
+
+                            new_image = image.copy()
+                            new_image1 = ImageTk.PhotoImage(new_image)
+
+                            self.__imsc = new_image
+                            self.__im = new_image1
 
 
-                            new_image = ImageTk.PhotoImage(image)
+                            global gevent
+                            gevent.set()
 
-                            self.__im = new_image
-                            self.__lcd['image'] = self.__im
-                            #del image
-                            end_cpu = time.clock()
-                            #print "end time :%f " % (end_cpu - start_cpu)
                         except:
                             continue
 
 
-# screen windows thread
+
 class mobileco_lcd_update(threading.Thread):
+    """
+    Thread for start the screen update
+    """
     __tkapp = None
     __root = None
-
+    global gevent
     def __init__(self,root):
         threading.Thread.__init__(self)
         self.thread_stop = False
         self.__tkapp = root
     def run(self):
-        if DEBUG:
-            print 'run mobileco_lcd'
-        #self.__tkapp = LcdApplication(master=self.__root)
+
         title = 'mobileco '+ __version__+ '-LCD'
         self.__tkapp.master.title(title)
         t = threading.Timer(1, self.__tkapp.updatelcd_sock)
         t.start()
-        #self.__tkapp.grid()
-        #self.__tkapp.mainloop()
-        if DEBUG:
-            print 'exit mobileco_lcd mainloop'
+
+        self.__tkapp.update_screen()
+
+        print 'exit mobileco_lcd_update '
 
 
     def stop(self):
-        if DEBUG:
-            print 'stop mobileco_lcd'
+        print 'stop mobileco_lcd'
         self.thread_stop = True
         if self.__tkapp != None:
             self.__tkapp.stop()
@@ -624,7 +697,15 @@ class mobileco:
         b_root.mainloop()
 
         #stop=============
+        global gexit
+        gexit = True
+
+        # Make sure stop First for None Resource
+        time.sleep(1)
+        # Stop lcd screen update thread
         lcd_thread.stop()
+
+        #stop the
         tklcd.stop()
 
     def add_menu(self,root):
@@ -690,4 +771,5 @@ if __name__ == '__main__':
     mob.mobileco_main()
 
     #run end
+    sys.exit()
 
