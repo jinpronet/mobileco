@@ -12,7 +12,7 @@ class a:
 
 class Slogy:
     '''
-    save log
+    save log,and extern for save we need result
     '''
 
     name_fd = None

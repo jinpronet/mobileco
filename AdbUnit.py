@@ -20,8 +20,7 @@ import Slogy
 
 class AdbUnit:
     '''
-    class
-
+    class of Unit for adb transfor
     '''
 
     __socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,7 +37,10 @@ class AdbUnit:
 
     #connect the adb server
     def connect_adb_server(self):
-
+        """
+        Test to connect the adb server ,if not server start
+        then start it
+        """
         while True:
             try:
                 self.__socket.connect(('127.0.0.1', 5037))
@@ -52,6 +54,9 @@ class AdbUnit:
 
         #
     def device_exist(self):
+        """
+        Test for the adb devcies have online
+        """
         req_msg = 'host:devices'
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -93,6 +98,9 @@ class AdbUnit:
 
     # Send adb shell command
     def adbshellcommand(self,cmd):
+        """
+        Send a command to adb mobile
+        """
         reply = ""
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -153,38 +161,41 @@ class AdbUnit:
         else:
             self.slog.loge("device not online for key:[%s] input" % key)
 
-    # Read adb response, if 'OKAY' turn true
+
     def readAdbResponse(self,s):
-            if s != None:
-                resp = s.recv(4)
-                if self.DEBUG:
-                    print 'resp: %s ' % repr(resp)
+        """
+        Read adb response, if 'OKAY' turn true
+        """
+        if s is not None:
+            resp = s.recv(4)
+            if self.DEBUG:
+                print 'resp: %s ' % repr(resp)
 
-            if len(resp) != 4:
-                print 'protocol fault (no status)'
+        if len(resp) != 4:
+            print 'protocol fault (no status)'
+            return False
+
+        if resp == 'OKAY':
+            return True
+        elif resp == 'FAIL':
+            resp = s.recv(4)
+            if len(resp) < 4:
+                print 'protocol fault (status len)'
                 return False
-
-            if resp == 'OKAY':
-                return True
-            elif resp == 'FAIL':
-                resp = s.recv(4)
-                if len(resp) < 4:
-                    print 'protocol fault (status len)'
+            else:
+                length = int(resp, 16)
+                resp = s.recv(length)
+                if len(resp) != length:
+                    print 'protocol fault (status read)'
                     return False
                 else:
-                    length = int(resp, 16)
-                    resp = s.recv(length)
-                    if len(resp) != length:
-                        print 'protocol fault (status read)'
-                        return False
-                    else:
-                        print resp
-                        return False
-            else:
-                print "protocol fault (status %02x %02x %02x %02x?!)", (resp[0], resp[1], resp[2], resp[3])
-                return False
-
+                    print resp
+                    return False
+        else:
+            print "protocol fault (status %02x %02x %02x %02x?!)", (resp[0], resp[1], resp[2], resp[3])
             return False
+
+        return False
 
     # Print Hex Buffer
     def hexdump(self,buf = None):
@@ -218,8 +229,11 @@ class AdbUnit:
         else:
             return 0
 
-    # Parse fb header from buffer
+
     def readHeader(self,tfb, ver, buf):
+        """
+        Parse fb header from buffer
+        """
         self.slog.logd('readHeader: ver = ' + str(ver))
         if ver == 16:
             tfb.fb_bpp = 16
@@ -251,8 +265,11 @@ class AdbUnit:
             return False
         return True
 
-    # Find the Touch input device and event
+
     def get_touch_event(self):
+        """
+        Find the Touch input device and event
+        """
         tp_names = ['ft5x06', 'gt818']
         output = self.adbshellcommand('getevent -S')
         if output == None:
@@ -287,10 +304,13 @@ class AdbUnit:
         else:
             return None
 
-    # Do the touch action
     def send_touch_event(self,action, x0, y0, x1 = None, y1 = None):
-        # Note: input support tap & swipe after 4.1
-        # so we need emulate TP via sendevent if tap or swipe fail
+        """
+        Do the touch action
+        Note: input support tap & swipe after 4.1
+        so we need emulate TP via sendevent if tap or swipe fail
+        """
+
         if action == 'tap':
             resp = self.adbshellcommand('input tap %d %d' % (x0, y0))
             if 'Error' in resp:
@@ -304,18 +324,18 @@ class AdbUnit:
 
                 # down
                 cmd_str = ''
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 53, x0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 54, y0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 57, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 48, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 1)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 53, x0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 54, y0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 57, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 48, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 1)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
 
                 # up
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
 
                 self.slog.logd(cmd_str)
                 self.adbshellcommand(cmd_str)
@@ -348,20 +368,20 @@ class AdbUnit:
                         y = y0 - i * stepy
 
                     cmd_str = ''
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 53, x)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 54, y)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 57, 0)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 3, 48, 0)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 1)
-                    cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 53, x)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 54, y)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 57, 0)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 3, 48, 0)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 1)
+                    cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 0, 0)
                     self.adbshellcommand(cmd_str)
 
                 # up
                 cmd_str = ''
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
-                cmd_str = cmd_str + 'sendevent %s %d %d %d' % (tp[1], 0, 0, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 1, 330, 0)
+                cmd_str += 'sendevent %s %d %d %d;' % (tp[1], 0, 2, 0)
+                cmd_str += 'sendevent %s %d %d %d' % (tp[1], 0, 0, 0)
                 self.slog.logd(cmd_str)
                 self.adbshellcommand(cmd_str)
 
@@ -369,7 +389,7 @@ class AdbUnit:
 
 
 if __name__ == '__main__':
-    import cProfile
+
     adb = AdbUnit()
     cout = 0
     log = Slogy.Slogy("good")
