@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 
 __author__ = 'youjin'
-__version__ = '0.5'
+__version__ = '0.6'
 
 import subprocess,os
 import threading
@@ -220,7 +220,7 @@ class ttkTestApplication(ttk.Frame):
 
         cmd = "none"
         if bn == "enginner":
-            cmd = "am start -n  com.sprd.enginermode/.EngineerModeActivity"
+            cmd = "am start -n  com.sprd.engineermode/.EngineerModeActivity"
             pass
         elif bn == "gps":
             cmd = "am start -n com.spreadtrum.sgps/.SgpsActivity"
@@ -415,7 +415,7 @@ class LcdApplication(tk.Frame):
                 draw.line((self.mx,self.my,self.mx1,self.my1),fill = 'red',width = 2)
             else:
                 draw.ellipse((self.mx-10,self.my-10, self.mx+10, self.my+10), outline ='red')
-            draw.text((30,30),"hell",fill='red')
+            #draw.text((30,30),"hell",fill='red')
             del draw
             new_image = ImageTk.PhotoImage(self.__imsc)
             #print "update_screen"
@@ -612,7 +612,7 @@ class LcdApplication(tk.Frame):
 
                             draw = ImageDraw.Draw(image)
                             draw.text((5, 30), 'Fbps:%f S'%(end3_cpu - end1_cpu),fill = "#ff0000")
-                            draw.text((5,40),'USB Speed:%f MB/s '%(myfb.fb_size /(1024*1024)/(end3_cpu - end1_cpu)),fill = "#ff0000")
+                            draw.text((5,40),'USB Speed:%f MB/s '%(((myfb.fb_size)/(1024*1024))/(end3_cpu - end1_cpu)),fill = "#ff0000")
 
                             new_image = image.copy()
                             new_image1 = ImageTk.PhotoImage(new_image)
