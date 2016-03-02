@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 
 __author__ = 'youjin'
-__version__ = '0.6'
+__version__ = '0.7'
 
 import subprocess,os
 import threading
@@ -66,7 +66,7 @@ keyvalues = [ 3, 82, 4, 84,
               8,  9,10, 0,
               11,12,13, 27,
               14,15,16, 66,
-              17, 7,18
+              17, 7,18,
             ]
 
 
@@ -132,6 +132,11 @@ class send_key_thread(threading.Thread):
             if self.adb.device_exist():
                 if self.__key != 'none':
                     self.adb.adbshellcommand('input keyevent %s' % str(keyvalues[keynames.index(self.__key)]))
+        else :
+            if self.adb.device_exist():
+                if self.__key != "none":
+                    self.adb.adbshellcommand('input keyevent %s' % (self.__key).upper())
+                    print 'input keyevent %s' % (self.__key).upper()
 
     def run(self):
         self.log.logd('send_key_thread run')
@@ -169,7 +174,7 @@ class ttkTestApplication(ttk.Frame):
 
         #add test button
         cl = 0
-        for bn in ['enginner','gps','validation']:
+        for bn in ['enginner','gps','validation','test']:
             g_button = ttk.Button(self,name = bn,text = bn)
             g_button.bind('<ButtonRelease-1>', self._test_func)
             g_button.grid(row = 0,column = cl)
@@ -178,11 +183,11 @@ class ttkTestApplication(ttk.Frame):
         t = ttk.Label(self,text = "命令：")
         t.grid(row = 1,column = 0)
         self._entry = ttk.Entry(self,width = 25)
-        self._entry.grid(row = 1,column = 1,columnspan=2)
+        self._entry.grid(row = 1,column = 1,columnspan=cl-1)
         self._entry.bind("<Return>",self.get_cmd)
 
-        self._text = ScrolledText(self,width = 30,height = 20)
-        self._text.grid(row = 2,column =0,columnspan =3)
+        self._text = ScrolledText(self,width = cl*10,height = 20)
+        self._text.grid(row = 2,column =0,columnspan =cl)
         self.master.bind('<Configure>',self.resize)
 
         pass
@@ -227,6 +232,9 @@ class ttkTestApplication(ttk.Frame):
             pass
         elif bn == "validation":
             cmd = "am start -n com.sprd.validationtools/.ValidationToolsMainActivity"
+            pass
+        elif bn == "test":
+            cmd = "am start -n test.zhlt.g1/.TestActivity"
             pass
 
         if self._adb.device_exist():
@@ -323,7 +331,7 @@ class LcdApplication(tk.Frame):
         self.log.logd( 'LcdApplication: createlcd')
 
         # make default image display on label
-        image = Image.new(mode = 'RGB', size = (240, 320), color = '#000000')
+        image = Image.new(mode = 'RGB', size = (320, 320), color = '#000000')
         self.screen = image
         draw = ImageDraw.Draw(image)
         draw.text((80, 100), 'Connecting...')
@@ -681,6 +689,10 @@ class mobileco:
             self.glog = Slogy.Slogy("mobileco")
 
         pass
+    def printkey(self,event):
+        print event.char
+        print event.keycode
+        self.sendKey_int(event.keycode)
 
     def mobileco_main(self):
         b_root = tk.Tk()
@@ -688,13 +700,14 @@ class mobileco:
 
         self.add_menu(b_root)
         self.add_button(b_root)
-
+        #b_root.bind('<Key>', self.printkey)
         #thread for read data from Android
         lcd_thread = mobileco_lcd_update(tklcd)
         lcd_thread.start()
 
         self.glog.loge("show loop")
         b_root.mainloop()
+
 
         #stop=============
         global gexit
@@ -724,12 +737,16 @@ class mobileco:
         b1 = ttk.Button(b_frame,name = "menu",text = "menu")
         b2 = ttk.Button(b_frame,name = "home",text = "home")
         b3 = ttk.Button(b_frame,name = "back",text = "back")
+        b4 = ttk.Button(b_frame,name = "power",text = "power")
         b1.bind("<Button-1>",self.sendKey)
         b2.bind("<Button-1>",self.sendKey)
         b3.bind("<Button-1>",self.sendKey)
+        b4.bind("<Button-1>",self.sendKey)
         b1.grid(row = 0,column =0)
         b2.grid(row = 0,column =1)
         b3.grid(row = 0,column =2)
+        b4.grid(row = 0,column =3)
+
         b_frame.grid()
 
     def show_keypad(self):
@@ -743,13 +760,16 @@ class mobileco:
     def show_about(self):
         print "help"
         showinfo(title='帮助',message="联系人:youjin\n联系方式:https://github.com/jinpronet/mobileco")
+    def sendKey_int(self,key):
+        print "key:"+str(key)
+        send_key_thread(str(key))
 
     def sendKey(self,event):
             print "event"
 
             print event.widget.winfo_name()
             keyname = event.widget.winfo_name()
-            if keyname in keynames:
+            if keyname in keynames or keyname == "power":
                 sender = send_key_thread(keyname)
                 sender.start()
 
