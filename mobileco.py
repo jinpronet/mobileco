@@ -18,6 +18,7 @@ import time
 import Slogy
 
 import AdbUnit
+import qrcode
 
 
 try:
@@ -174,7 +175,7 @@ class ttkTestApplication(ttk.Frame):
 
         #add test button
         cl = 0
-        for bn in ['enginner','gps','validation','test']:
+        for bn in ['enginner','gps','validation','test','catlog','setting']:
             g_button = ttk.Button(self,name = bn,text = bn)
             g_button.bind('<ButtonRelease-1>', self._test_func)
             g_button.grid(row = 0,column = cl)
@@ -234,9 +235,14 @@ class ttkTestApplication(ttk.Frame):
             cmd = "am start -n com.sprd.validationtools/.ValidationToolsMainActivity"
             pass
         elif bn == "test":
-            cmd = "am start -n test.zhlt.g1/.TestActivity"
+            cmd = "input keyevent 60;am force-stop test.zhlt.g1;am start -n test.zhlt.g1/.TestActivity"
             pass
-
+        elif bn == "catlog":
+            cmd = "cat /sdcard/test.log"
+            pass
+        elif bn == "setting":
+            cmd = "am start -n com.android.settings/com.android.settings.Settings"
+            pass
         if self._adb.device_exist():
             self.show_respon(cmd)
             rep =  self._adb.adbshellcommand(cmd)
@@ -728,6 +734,7 @@ class mobileco:
         menu_key = tk.Menu(root)
         menu_key.add_command(label="键盘",command = self.show_keypad )
         menu_key.add_command(label="测试",command = self.show_test )
+        menu_key.add_command(label="导出文件",command = self.pull_file )
         menu_key.add_command(label="帮助",command = self.show_about )
         root.config(menu=menu_key)
 
@@ -760,6 +767,39 @@ class mobileco:
     def show_about(self):
         print "help"
         showinfo(title='帮助',message="联系人:youjin\n联系方式:https://github.com/jinpronet/mobileco")
+    def pull_file(self):
+        print "pull file"
+        os.system("adb pull /sdcard/test.log .")
+        f = open('test.log')
+        while True:
+            line = f.readline()
+            if line:
+                pass
+                content = line.replace('\n','')
+                test1 =content.split(":")[1]
+                test2 = content.split(":")[0]
+                if test2.find("IMEI")!=-1:
+                    pass
+                    deviceimei = test1[2:]
+                    print deviceimei
+
+                    qr = qrcode.QRCode(
+                    version=2,
+                     error_correction=qrcode.constants.ERROR_CORRECT_L,
+                     box_size=10,
+                     border=1
+                    )
+                    qr.add_data(deviceimei)
+                    qr.make(fit=True)
+                    img = qr.make_image()
+                    img.save("dhqme_qrcode.png")
+                else:
+                    print test1
+            else:
+                print "break"
+                break
+        f.close()
+        showinfo(title='导入文件成功',message="deviceimei: "+deviceimei)
     def sendKey_int(self,key):
         print "key:"+str(key)
         send_key_thread(str(key))
@@ -772,6 +812,8 @@ class mobileco:
             if keyname in keynames or keyname == "power":
                 sender = send_key_thread(keyname)
                 sender.start()
+
+
 
 if __name__ == '__main__':
     prog_name = sys.argv[0]
