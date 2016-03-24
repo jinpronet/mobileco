@@ -39,8 +39,8 @@ class Barprint:
         #打印二维码,测试不成功，gp3120TL不支持该方式
         #self.dll2.sendcommand("QRCODE 10,10,H,4,A,0,M1,S7,'123456789012345'")
         #打印条形码
-        self.dll2.barcode("1","8","128","60","0","0","2","16",tstr[5:])
-        self.dll2.printerfont("6","80","1","0","2","1",tstr[5:])
+        self.dll2.barcode("1","8","128","60","0","0","2","16",tstr[4:])
+        self.dll2.printerfont("6","80","1","0","2","1",tstr[4:])
         #绘制矩形
         #dll2.sendcommand("BOX 50,10,600,280,5")
         #使用windows字体打印,中文字体注意转换为unicode

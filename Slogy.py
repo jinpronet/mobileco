@@ -61,3 +61,14 @@ class Slogy:
     def outp(self,str):
         pass
 
+class Result:
+
+    def __init__(self,name):
+        curDate = date.today() - timedelta(days=0)
+        self.fd = open("log/"+name+"_"+str(curDate)+".txt",'a')
+    def save(self,tstr):
+        self.fd.write(tstr+"\n")
+        self.fd.flush()
+    def close(self):
+        self.fd.close()
+

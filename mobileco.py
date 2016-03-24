@@ -688,12 +688,13 @@ def usage():
 
 class mobileco:
     global glog
+    gresult=None
     def __init__(self,debug = False):
         if debug:
             self.glog = Slogy.Slogy("mobileco",debug = True)
         else:
             self.glog = Slogy.Slogy("mobileco")
-
+        self.gresult = Slogy.Result("IMEI")
         pass
     def printkey(self,event):
         print event.char
@@ -786,7 +787,7 @@ class mobileco:
                 test2 = content.split(":")[0]
                 if test2.find("IMEI")!=-1:
                     pass
-                    deviceimei = test1[2:]
+                    deviceimei = test1
                     print deviceimei
                     if deviceimei != '':
                         c = Barprint()
@@ -800,7 +801,9 @@ class mobileco:
                     qr.add_data(deviceimei)
                     qr.make(fit=True)
                     img = qr.make_image()
-                    img.save(deviceimei+".png")
+                    img.save("image/"+deviceimei+".png")
+
+                    self.gresult.save("IMEI:"+deviceimei)
                 else:
                     print test1
             else:
@@ -820,6 +823,8 @@ class mobileco:
             if keyname in keynames or keyname == "power":
                 sender = send_key_thread(keyname)
                 sender.start()
+    def __del__(self):
+        self.gresult.close()
 
 
 

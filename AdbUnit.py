@@ -32,7 +32,7 @@ class AdbUnit:
 
     def __init__(self):
         #self.connect_adb_server()
-        self.slog = Slogy.Slogy("adbunit")
+        self.slog = Slogy.Slogy("mobileco")
         pass
 
     #connect the adb server
