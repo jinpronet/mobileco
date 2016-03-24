@@ -9,7 +9,7 @@
 # ---------------------------------------------------------------------------
 
 __author__ = 'youjin'
-__version__ = '0.7'
+__version__ = '0.8'
 
 import subprocess,os
 import threading
@@ -19,7 +19,7 @@ import Slogy
 
 import AdbUnit
 import qrcode
-
+from barprint import *
 
 try:
     import Tkinter as tk
@@ -769,8 +769,14 @@ class mobileco:
         showinfo(title='帮助',message="联系人:youjin\n联系方式:https://github.com/jinpronet/mobileco")
     def pull_file(self):
         print "pull file"
+
         os.system("adb pull /sdcard/test.log .")
-        f = open('test.log')
+        try:
+            f = open('test.log')
+        except IOError:
+            print IOError
+            showwarning("ERROR!","No Test Result Data Get\nCheck The USB or Device")
+            return -1
         while True:
             line = f.readline()
             if line:
@@ -782,7 +788,9 @@ class mobileco:
                     pass
                     deviceimei = test1[2:]
                     print deviceimei
-
+                    if deviceimei != '':
+                        c = Barprint()
+                        c.print_bar(deviceimei)
                     qr = qrcode.QRCode(
                     version=2,
                      error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -792,7 +800,7 @@ class mobileco:
                     qr.add_data(deviceimei)
                     qr.make(fit=True)
                     img = qr.make_image()
-                    img.save("dhqme_qrcode.png")
+                    img.save(deviceimei+".png")
                 else:
                     print test1
             else:
