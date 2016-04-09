@@ -423,7 +423,8 @@ class LcdApplication(tk.Frame):
             global gexit
             if gexit:
                 break
-
+            if self.__imsc == None:
+                break
             draw = ImageDraw.Draw(self.__imsc)
             if self.swip:
                 draw.line((self.mx,self.my,self.mx1,self.my1),fill = 'red',width = 2)
@@ -433,7 +434,6 @@ class LcdApplication(tk.Frame):
             del draw
             new_image = ImageTk.PhotoImage(self.__imsc)
             #print "update_screen"
-
             self.__lcd['image'] = new_image
             gevent.clear()
 
@@ -735,7 +735,7 @@ class mobileco:
         menu_key = tk.Menu(root)
         menu_key.add_command(label="键盘",command = self.show_keypad )
         menu_key.add_command(label="测试",command = self.show_test )
-        menu_key.add_command(label="导出文件",command = self.pull_file )
+        menu_key.add_command(label="打印IMEI",command = self.pull_file )
         menu_key.add_command(label="帮助",command = self.show_about )
         root.config(menu=menu_key)
 
@@ -768,9 +768,22 @@ class mobileco:
     def show_about(self):
         print "help"
         showinfo(title='帮助',message="联系人:youjin\n联系方式:https://github.com/jinpronet/mobileco")
-    def pull_file(self):
-        print "pull file"
 
+    def get_imei2(self):
+        ''''
+        This is a method for get imei with adb shell getprop
+        '''
+        imei = ''
+        adbtool = AdbUnit.AdbUnit()
+        imei = adbtool.adbshellcommand("getprop persist.support.test.imei")
+        print imei
+        return imei
+
+        pass
+    def get_imei(self):
+        ''''
+        This is a method for get imei with adb pull
+        '''
         os.system("adb pull /sdcard/test.log .")
         try:
             f = open('test.log')
@@ -789,19 +802,16 @@ class mobileco:
                     pass
                     deviceimei = test1
                     print deviceimei
-                    if deviceimei != '':
-                        c = Barprint()
-                        c.print_bar(deviceimei)
-                    qr = qrcode.QRCode(
-                    version=2,
-                     error_correction=qrcode.constants.ERROR_CORRECT_L,
-                     box_size=10,
-                     border=1
-                    )
-                    qr.add_data(deviceimei)
-                    qr.make(fit=True)
-                    img = qr.make_image()
-                    img.save("image/"+deviceimei+".png")
+                    # qr = qrcode.QRCode(
+                    # version=2,
+                    #  error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    #  box_size=10,
+                    #  border=1
+                    # )
+                    # qr.add_data(deviceimei)
+                    # qr.make(fit=True)
+                    # img = qr.make_image()
+                    # img.save("image/"+deviceimei+".png")
 
                     self.gresult.save("IMEI:"+deviceimei)
                 else:
@@ -810,7 +820,27 @@ class mobileco:
                 print "break"
                 break
         f.close()
-        showinfo(title='导入文件成功',message="deviceimei: "+deviceimei)
+        return deviceimei
+        pass
+
+    def show_warn(self,strwarn):
+        strwarn = str(strwarn)
+        showwarning(title="WARN",message=strwarn)
+
+    def print_imei(self):
+        deviceimei = self.get_imei2()
+        print "["+deviceimei+"]"
+        if deviceimei.lstrip() != "":
+            c = Barprint()
+            c.print_bar(deviceimei,"2")
+        else:
+            self.glog.loge( "No IMEI Get ")
+        pass
+
+
+    def pull_file(self):
+        threading.Thread(target=self.print_imei).start()
+
     def sendKey_int(self,key):
         print "key:"+str(key)
         send_key_thread(str(key))

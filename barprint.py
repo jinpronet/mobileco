@@ -20,7 +20,7 @@ class Barprint:
             print Exception,":",e
             self.error = True
 
-    def print_bar(self,tstr):
+    def print_bar(self,tstr,copynum="1"):
         if self.error or tstr == '':
             return
         try:
@@ -47,7 +47,10 @@ class Barprint:
         str = c_char_p(u"激活码")
         print str.value.decode('gb2312')
         self.dll2.windowsfont(70,110,30,0,0,0,"Arial",str)
-        self.dll2.printlabel("1","1")
+        strto = c_char_p()
+        strto.value=copynum
+
+        self.dll2.printlabel("1",strto)
         self.dll2.closeport()
 
 if  __name__ == "__main__":
